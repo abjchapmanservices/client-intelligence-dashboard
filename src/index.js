@@ -1,4 +1,4 @@
-import clients from "../data/clients.json";
+import clients from "../data/clients.json" with { type: "json" };
 
 
 console.log("Client Intelligence Dashboard Started");
