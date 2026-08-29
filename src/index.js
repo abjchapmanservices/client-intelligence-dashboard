@@ -1,5 +1,6 @@
 import clients from "../data/clients.json" with { type: "json" };
 import { getGoogleAds } from "./googleAds.js";
+import { getTeamworkData } from "./apis/teamwork.js";
 
 import { getMeta } from "./meta.js";
 
