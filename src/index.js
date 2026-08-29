@@ -1,4 +1,5 @@
 import clients from "../data/clients.json" with { type: "json" };
+import { getGoogleAds } from "./googleAds.js";
 
 import { getMeta } from "./meta.js";
 
@@ -57,7 +58,37 @@ for (const client of activeClients) {
     "Meta Error:",
     meta.error
   );
+const google =
+  await getGoogleAds(
+    client.googleAdsId,
+    "2026-08-20"
+  );
 
+
+console.log(
+  "Google Spend:",
+  google.spend
+);
+
+console.log(
+  "Google Impressions:",
+  google.impressions
+);
+
+console.log(
+  "Google Clicks:",
+  google.clicks
+);
+
+console.log(
+  "Google Success:",
+  google.success
+);
+
+console.log(
+  "Google Error:",
+  google.error
+);
 
 }
 
