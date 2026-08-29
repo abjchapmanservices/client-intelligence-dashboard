@@ -90,7 +90,19 @@ console.log(
   "Google Error:",
   google.error
 );
+const teamwork =
+  await getTeamworkData(
+    client.teamworkProjectId,
+    "2026-08-20"
+  );
 
+
+console.log("Teamwork Hours:", teamwork.hours);
+console.log("Teamwork Billable:", teamwork.billable);
+console.log("Teamwork Expenses:", teamwork.expenses);
+console.log("Last Invoice:", teamwork.lastInvoice);
+console.log("Teamwork Success:", teamwork.success);
+console.log("Teamwork Error:", teamwork.error);
 }
 
 
