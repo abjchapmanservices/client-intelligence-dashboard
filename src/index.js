@@ -1,5 +1,7 @@
 import clients from "../data/clients.json" with { type: "json" };
 
+import { getMeta } from "./meta.js";
+
 
 console.log("Client Intelligence Dashboard Started");
 
@@ -9,31 +11,55 @@ const activeClients = clients.filter(
 );
 
 
-console.log(
-  "Number of clients:",
-  clients.length
-);
-
-
-console.log(
-  "Active clients:",
-  activeClients.length
-);
-
-
 for (const client of activeClients) {
+
 
   console.log("----------------------------");
 
-  console.log("Client:", client.name);
-  console.log("Teamwork:", client.teamworkProjectId);
-  console.log("QuickBooks:", client.quickbooksCustomerId);
-  console.log("Meta:", client.metaAdId);
-  console.log("Google Ads:", client.googleAdsId);
+  console.log(
+    "Client:",
+    client.name
+  );
+
+
+  const meta = await getMeta(
+    client.metaAdId,
+    process.env.META_ACCESS_TOKEN,
+    "2026-08-20"
+  );
+
+
+  console.log(
+    "Meta Spend:",
+    meta.spend
+  );
+
+
+  console.log(
+    "Meta Impressions:",
+    meta.impressions
+  );
+
+
+  console.log(
+    "Meta Clicks:",
+    meta.clicks
+  );
+
+
+  console.log(
+    "Meta Success:",
+    meta.success
+  );
+
+
+  console.log(
+    "Meta Error:",
+    meta.error
+  );
+
 
 }
 
-
-console.log("----------------------------");
 
 console.log("Complete");
