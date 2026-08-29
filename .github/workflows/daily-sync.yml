@@ -1,1 +1,30 @@
 # Daily sync workflow will go here
+name: Client Intelligence Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+
+  run-dashboard:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+
+      - name: Install Packages
+        run: npm install
+
+
+      - name: Run Script
+        run: npm start
