@@ -28,3 +28,5 @@ jobs:
 
       - name: Run Script
         run: npm start
+        env:
+          META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
