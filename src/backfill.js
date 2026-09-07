@@ -11,7 +11,7 @@ console.log(
 );
 
 
-const START_DATE = "2026-01-01";
+const START_DATE = "2026-09-06";
 const END_DATE = "2026-09-06";
 
 
