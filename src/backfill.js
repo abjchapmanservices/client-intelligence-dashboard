@@ -290,7 +290,7 @@ for (const date of dates) {
     // Small delay to reduce
     // API rate-limit pressure
 
-    await wait(200);
+    await wait(1000);
 
   }
 }
