@@ -7,7 +7,8 @@ let invoiceCachePromise = null;
 
 function wait(ms) {
   return new Promise(
-    resolve => setTimeout(resolve, ms)
+    resolve =>
+      setTimeout(resolve, ms)
   );
 }
 
@@ -19,7 +20,10 @@ async function teamworkFetch(
 ) {
 
   const response =
-    await teamworkFetch(url, options);
+    await fetch(
+      url,
+      options
+    );
 
 
   if (
