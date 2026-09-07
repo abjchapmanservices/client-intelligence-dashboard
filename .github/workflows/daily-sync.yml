@@ -42,3 +42,20 @@ jobs:
           QUICKBOOKS_CLIENT_SECRET: ${{ secrets.QUICKBOOKS_CLIENT_SECRET }}
           QUICKBOOKS_REFRESH_TOKEN: ${{ secrets.QUICKBOOKS_REFRESH_TOKEN }}
           QUICKBOOKS_REALM_ID: ${{ secrets.QUICKBOOKS_REALM_ID }}
+
+      - name: Update QuickBooks Refresh Token
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.QUICKBOOKS_SECRET_UPDATE_TOKEN }}
+        run: |
+          if [ -f /tmp/quickbooks_refresh_token ]; then
+            gh secret set QUICKBOOKS_REFRESH_TOKEN \
+              --repo "${{ github.repository }}" \
+              --body "$(cat /tmp/quickbooks_refresh_token)"
+
+            rm -f /tmp/quickbooks_refresh_token
+
+            echo "QuickBooks refresh token updated successfully."
+          else
+            echo "No new QuickBooks refresh token to save."
+          fi
