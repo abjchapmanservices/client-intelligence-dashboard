@@ -2,11 +2,16 @@ import clients from "../data/clients.json" with { type: "json" };
 import { getGoogleAds } from "./googleAds.js";
 import { getTeamworkData } from "./apis/teamwork.js";
 import { getQuickBooksData } from "./quickbooks.js";
+import {
+  appendClientData
+} from "./sheets.js";
 
 import { getMeta } from "./meta.js";
 
 
 console.log("Client Intelligence Dashboard Started");
+
+const date = "2026-08-20";
 
 
 const activeClients = clients.filter(
@@ -28,7 +33,7 @@ for (const client of activeClients) {
   const meta = await getMeta(
     client.metaAdId,
     process.env.META_ACCESS_TOKEN,
-    "2026-08-20"
+    date
   );
 
 
@@ -63,7 +68,7 @@ for (const client of activeClients) {
 const google =
   await getGoogleAds(
     client.googleAdsId,
-    "2026-08-20"
+    date
   );
 
 
@@ -94,7 +99,7 @@ console.log(
 const teamwork =
   await getTeamworkData(
     client.teamworkProjectId,
-    "2026-08-20"
+    date
   );
 
 
@@ -111,7 +116,7 @@ console.log("Teamwork Error:", teamwork.error);
 const quickbooks =
   await getQuickBooksData(
     client.quickbooksCustomerId,
-    "2026-08-20"
+    date
   );
 
 
