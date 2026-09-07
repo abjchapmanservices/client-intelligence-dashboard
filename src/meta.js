@@ -1,7 +1,29 @@
-const insightCache = new Map();
+import clients from "../data/clients.json" with {
+  type: "json"
+};
 
+import {
+  getCampaignMappings,
+  appendCampaignMappings
+} from "./sheets.js";
+
+
+const insightCache =
+  new Map();
+
+let campaignMappingPromise =
+  null;
+
+const preparedAccountDates =
+  new Set();
+
+
+// ============================================
+// NORMALIZATION
+// ============================================
 
 function normalize(value) {
+
   return String(value || "")
     .toLowerCase()
     .replace(/&/g, " and ")
@@ -11,39 +33,202 @@ function normalize(value) {
 }
 
 
-function campaignMatches(
+function mappingKey(
   campaignName,
-  matchTerms
+  adAccountId
+) {
+
+  return (
+    `${String(adAccountId || "").trim()}|` +
+    normalize(campaignName)
+  );
+}
+
+
+// ============================================
+// LOAD CAMPAIGN MATCHING TAB
+// ============================================
+
+async function loadCampaignMappingMap() {
+
+  const rows =
+    await getCampaignMappings();
+
+
+  const map =
+    new Map();
+
+
+  for (const row of rows) {
+
+    if (!row.campaignName) {
+      continue;
+    }
+
+
+    const key =
+      mappingKey(
+        row.campaignName,
+        row.adAccountId
+      );
+
+
+    map.set(
+      key,
+      {
+        campaignName:
+          row.campaignName,
+
+        client:
+          row.client,
+
+        adAccountId:
+          row.adAccountId
+      }
+    );
+  }
+
+
+  return map;
+}
+
+
+async function getCampaignMappingMap() {
+
+  if (!campaignMappingPromise) {
+
+    campaignMappingPromise =
+      loadCampaignMappingMap();
+  }
+
+
+  return campaignMappingPromise;
+}
+
+
+// ============================================
+// AUTO-SUGGEST CLIENT
+// FOR A NEW CAMPAIGN
+// ============================================
+
+function suggestClientForCampaign(
+  campaignName,
+  adAccountId
 ) {
 
   const normalizedCampaign =
     normalize(campaignName);
 
 
-  for (const term of matchTerms) {
-
-    const normalizedTerm =
-      normalize(term);
+  const possibleMatches =
+    [];
 
 
-    if (!normalizedTerm) {
+  for (const client of clients) {
+
+    if (
+      String(
+        client.metaAdAccountId || ""
+      ).trim() !==
+      String(
+        adAccountId || ""
+      ).trim()
+    ) {
+
       continue;
     }
 
 
-    if (
-      normalizedCampaign.includes(
-        normalizedTerm
+    const terms =
+      Array.isArray(
+        client.metaMatch
       )
-    ) {
-      return true;
+        ? client.metaMatch
+        : [];
+
+
+    for (const term of terms) {
+
+      const normalizedTerm =
+        normalize(term);
+
+
+      if (!normalizedTerm) {
+        continue;
+      }
+
+
+      if (
+        normalizedCampaign.includes(
+          normalizedTerm
+        )
+      ) {
+
+        possibleMatches.push({
+          client:
+            client.name,
+
+          term:
+            normalizedTerm,
+
+          length:
+            normalizedTerm.length
+        });
+      }
     }
   }
 
 
-  return false;
+  if (
+    possibleMatches.length === 0
+  ) {
+
+    return "";
+  }
+
+
+  possibleMatches.sort(
+    (a, b) =>
+      b.length - a.length
+  );
+
+
+  const bestLength =
+    possibleMatches[0].length;
+
+
+  const bestClients =
+    [
+      ...new Set(
+        possibleMatches
+          .filter(
+            match =>
+              match.length ===
+              bestLength
+          )
+          .map(
+            match =>
+              match.client
+          )
+      )
+    ];
+
+
+  if (
+    bestClients.length !== 1
+  ) {
+
+    return "";
+  }
+
+
+  return bestClients[0];
 }
 
+
+// ============================================
+// META API
+// ============================================
 
 async function fetchCampaignInsights(
   adAccountId,
@@ -67,7 +252,8 @@ async function fetchCampaignInsights(
     `&access_token=${encodeURIComponent(accessToken)}`;
 
 
-  const rows = [];
+  const rows =
+    [];
 
 
   while (url) {
@@ -102,6 +288,11 @@ async function fetchCampaignInsights(
     url =
       data.paging?.next || "";
   }
+
+
+  console.log(
+    `Meta Account ${adAccountId}: ${rows.length} campaign rows on ${date}`
+  );
 
 
   return rows;
@@ -146,6 +337,145 @@ async function getCampaignInsights(
 }
 
 
+// ============================================
+// DISCOVER NEW CAMPAIGNS AND
+// WRITE THEM TO GOOGLE SHEETS
+// ============================================
+
+async function prepareCampaignMappings(
+  campaigns,
+  adAccountId,
+  date
+) {
+
+  const preparationKey =
+    `${adAccountId}|${date}`;
+
+
+  if (
+    preparedAccountDates.has(
+      preparationKey
+    )
+  ) {
+
+    return;
+  }
+
+
+  preparedAccountDates.add(
+    preparationKey
+  );
+
+
+  const mappingMap =
+    await getCampaignMappingMap();
+
+
+  const newMappings =
+    [];
+
+
+  for (const campaign of campaigns) {
+
+    const campaignName =
+      String(
+        campaign.campaign_name || ""
+      ).trim();
+
+
+    if (!campaignName) {
+      continue;
+    }
+
+
+    const key =
+      mappingKey(
+        campaignName,
+        adAccountId
+      );
+
+
+    if (
+      mappingMap.has(key)
+    ) {
+
+      continue;
+    }
+
+
+    const suggestedClient =
+      suggestClientForCampaign(
+        campaignName,
+        adAccountId
+      );
+
+
+    const newMapping = {
+      campaignName,
+      client:
+        suggestedClient,
+      adAccountId:
+        String(adAccountId)
+    };
+
+
+    newMappings.push(
+      newMapping
+    );
+
+
+    // Add immediately to memory
+    // so this run can use it.
+
+    mappingMap.set(
+      key,
+      newMapping
+    );
+  }
+
+
+  if (
+    newMappings.length === 0
+  ) {
+
+    return;
+  }
+
+
+  const result =
+    await appendCampaignMappings(
+      newMappings
+    );
+
+
+  if (!result.success) {
+
+    throw new Error(
+      `Campaign Matching sheet error: ${result.error}`
+    );
+  }
+
+
+  console.log(
+    `Added ${result.added} new campaigns to Campaign Matching`
+  );
+
+
+  for (
+    const mapping of newMappings
+  ) {
+
+    console.log(
+      `Campaign: ${mapping.campaignName} -> ${mapping.client || "UNMATCHED"}`
+    );
+  }
+}
+
+
+// ============================================
+// GET META DATA FOR CLIENT
+// ============================================
+
 export async function getMeta(
   client,
   accessToken,
@@ -155,15 +485,9 @@ export async function getMeta(
   try {
 
     const adAccountId =
-      client.metaAdAccountId;
-
-
-    const matchTerms =
-      Array.isArray(
-        client.metaMatch
-      )
-        ? client.metaMatch
-        : [];
+      String(
+        client.metaAdAccountId || ""
+      ).trim();
 
 
     if (!adAccountId) {
@@ -189,24 +513,8 @@ export async function getMeta(
         matchedCampaigns: 0,
         matchedCampaignNames: [],
         success: false,
-        error: "No Meta Token"
-      };
-    }
-
-
-    if (
-      matchTerms.length === 0
-    ) {
-
-      return {
-        spend: "",
-        impressions: "",
-        clicks: "",
-        matchedCampaigns: 0,
-        matchedCampaignNames: [],
-        success: false,
         error:
-          "No Meta match terms configured"
+          "No Meta Token"
       };
     }
 
@@ -219,22 +527,62 @@ export async function getMeta(
       );
 
 
+    await prepareCampaignMappings(
+      campaigns,
+      adAccountId,
+      date
+    );
+
+
+    const mappingMap =
+      await getCampaignMappingMap();
+
+
     let spend = 0;
     let impressions = 0;
     let clicks = 0;
+
 
     const matchedCampaignNames =
       [];
 
 
-    for (const campaign of campaigns) {
+    for (
+      const campaign of campaigns
+    ) {
+
+      const campaignName =
+        String(
+          campaign.campaign_name || ""
+        ).trim();
+
+
+      if (!campaignName) {
+        continue;
+      }
+
+
+      const key =
+        mappingKey(
+          campaignName,
+          adAccountId
+        );
+
+
+      const mapping =
+        mappingMap.get(key);
+
+
+      if (!mapping) {
+        continue;
+      }
+
 
       if (
-        !campaignMatches(
-          campaign.campaign_name,
-          matchTerms
-        )
+        normalize(mapping.client) !==
+        normalize(client.name)
       ) {
+
         continue;
       }
 
@@ -244,10 +592,12 @@ export async function getMeta(
           campaign.spend || 0
         );
 
+
       impressions +=
         Number(
           campaign.impressions || 0
         );
+
 
       clicks +=
         Number(
@@ -256,12 +606,13 @@ export async function getMeta(
 
 
       matchedCampaignNames.push(
-        campaign.campaign_name || ""
+        campaignName
       );
     }
 
 
     return {
+
       spend:
         Number(
           spend.toFixed(2)
@@ -277,21 +628,29 @@ export async function getMeta(
       matchedCampaignNames,
 
       success: true,
+
       error: ""
+
     };
 
 
   } catch(error) {
 
     return {
+
       spend: 0,
       impressions: 0,
       clicks: 0,
+
       matchedCampaigns: 0,
+
       matchedCampaignNames: [],
+
       success: false,
+
       error:
         error.message
+
     };
   }
 }
