@@ -37,8 +37,8 @@ for (const client of activeClients) {
   );
 
 
-  const meta = await getMeta(
-    client.metaAdId,
+  await getMeta(
+    client,
     process.env.META_ACCESS_TOKEN,
     date
   );
