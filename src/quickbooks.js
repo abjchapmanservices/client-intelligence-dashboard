@@ -1,3 +1,5 @@
+import fs from "fs";
+
 async function getAccessToken() {
 
   const clientId =
@@ -105,6 +107,22 @@ export async function getQuickBooksData(
 
     const auth =
       await getAccessToken();
+
+    if (
+      auth.refreshToken &&
+      auth.refreshToken !==
+        process.env.QUICKBOOKS_REFRESH_TOKEN
+    ) {
+    
+      fs.writeFileSync(
+        "/tmp/quickbooks_refresh_token",
+        auth.refreshToken,
+        {
+          encoding: "utf8",
+          mode: 0o600
+        }
+      );
+    }
 
 
     const accessToken =
