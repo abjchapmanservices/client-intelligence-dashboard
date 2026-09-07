@@ -104,10 +104,9 @@ console.log("Teamwork Expenses:", teamwork.expenses);
 console.log("Last Invoice:", teamwork.lastInvoice);
 console.log("Teamwork Success:", teamwork.success);
 console.log("Teamwork Error:", teamwork.error);
-}
 
 
-console.log("Complete");
+// QUICKBOOKS
 
 const quickbooks =
   await getQuickBooksData(
@@ -145,3 +144,10 @@ console.log(
   "QuickBooks Error:",
   quickbooks.error
 );
+
+
+// CLOSE CLIENT LOOP
+}
+
+
+console.log("Complete");
