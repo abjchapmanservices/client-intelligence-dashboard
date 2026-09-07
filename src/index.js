@@ -1,6 +1,7 @@
 import clients from "../data/clients.json" with { type: "json" };
 import { getGoogleAds } from "./googleAds.js";
 import { getTeamworkData } from "./apis/teamwork.js";
+import { getQuickBooksData } from "./quickbooks.js";
 
 import { getMeta } from "./meta.js";
 
@@ -107,3 +108,40 @@ console.log("Teamwork Error:", teamwork.error);
 
 
 console.log("Complete");
+
+const quickbooks =
+  await getQuickBooksData(
+    client.quickbooksCustomerId,
+    "2026-08-20"
+  );
+
+
+console.log(
+  "QuickBooks Balance:",
+  quickbooks.balance
+);
+
+console.log(
+  "QuickBooks Overdue:",
+  quickbooks.overdueBalance
+);
+
+console.log(
+  "QuickBooks Status:",
+  quickbooks.status
+);
+
+console.log(
+  "QuickBooks Open Invoices:",
+  quickbooks.openInvoices
+);
+
+console.log(
+  "QuickBooks Success:",
+  quickbooks.success
+);
+
+console.log(
+  "QuickBooks Error:",
+  quickbooks.error
+);
