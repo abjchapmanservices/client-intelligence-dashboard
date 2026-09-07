@@ -113,7 +113,7 @@ for (const date of dates) {
 
       meta =
         await getMeta(
-          client.metaAdId,
+          client,
           process.env.META_ACCESS_TOKEN,
           date
         );
