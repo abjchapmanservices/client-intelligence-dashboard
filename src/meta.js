@@ -1,106 +1,297 @@
-export async function getMeta(
+const insightCache = new Map();
+
+
+function normalize(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+
+function campaignMatches(
+  campaignName,
+  matchTerms
+) {
+
+  const normalizedCampaign =
+    normalize(campaignName);
+
+
+  for (const term of matchTerms) {
+
+    const normalizedTerm =
+      normalize(term);
+
+
+    if (!normalizedTerm) {
+      continue;
+    }
+
+
+    if (
+      normalizedCampaign.includes(
+        normalizedTerm
+      )
+    ) {
+      return true;
+    }
+  }
+
+
+  return false;
+}
+
+
+async function fetchCampaignInsights(
   adAccountId,
+  accessToken,
+  date
+) {
+
+  const timeRange =
+    JSON.stringify({
+      since: date,
+      until: date
+    });
+
+
+  let url =
+    `https://graph.facebook.com/v26.0/act_${adAccountId}/insights` +
+    `?level=campaign` +
+    `&fields=campaign_id,campaign_name,spend,impressions,clicks` +
+    `&time_range=${encodeURIComponent(timeRange)}` +
+    `&limit=500` +
+    `&access_token=${encodeURIComponent(accessToken)}`;
+
+
+  const rows = [];
+
+
+  while (url) {
+
+    const response =
+      await fetch(url);
+
+
+    const data =
+      await response.json();
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        data.error?.message ||
+        `Meta API error: ${response.status}`
+      );
+    }
+
+
+    if (
+      Array.isArray(data.data)
+    ) {
+
+      rows.push(
+        ...data.data
+      );
+    }
+
+
+    url =
+      data.paging?.next || "";
+  }
+
+
+  return rows;
+}
+
+
+async function getCampaignInsights(
+  adAccountId,
+  accessToken,
+  date
+) {
+
+  const cacheKey =
+    `${adAccountId}|${date}`;
+
+
+  if (
+    insightCache.has(cacheKey)
+  ) {
+
+    return insightCache.get(
+      cacheKey
+    );
+  }
+
+
+  const request =
+    fetchCampaignInsights(
+      adAccountId,
+      accessToken,
+      date
+    );
+
+
+  insightCache.set(
+    cacheKey,
+    request
+  );
+
+
+  return request;
+}
+
+
+export async function getMeta(
+  client,
   accessToken,
   date
 ) {
 
   try {
 
+    const adAccountId =
+      client.metaAdAccountId;
+
+
+    const matchTerms =
+      Array.isArray(
+        client.metaMatch
+      )
+        ? client.metaMatch
+        : [];
+
+
     if (!adAccountId) {
+
       return {
-        spend: 0,
-        impressions: 0,
-        clicks: 0,
-        success: false,
-        error: "No Meta Ad ID"
+        spend: "",
+        impressions: "",
+        clicks: "",
+        matchedCampaigns: 0,
+        matchedCampaignNames: [],
+        success: true,
+        error: ""
       };
     }
 
 
     if (!accessToken) {
+
       return {
         spend: 0,
         impressions: 0,
         clicks: 0,
+        matchedCampaigns: 0,
+        matchedCampaignNames: [],
         success: false,
         error: "No Meta Token"
       };
     }
 
 
-    const parts = date.split("-");
+    if (
+      matchTerms.length === 0
+    ) {
 
-    const apiDate =
-      `${parts[0]}-${parts[1]}-${parts[2]}`;
-
-
-    const timeRange = JSON.stringify({
-      since: apiDate,
-      until: apiDate
-    });
-
-
-    const url =
-      `https://graph.facebook.com/v26.0/act_${adAccountId}/insights` +
-      `?fields=spend,impressions,clicks` +
-      `&time_range=${encodeURIComponent(timeRange)}` +
-      `&access_token=${encodeURIComponent(accessToken)}`;
-
-
-    const response = await fetch(url);
-
-    const data = await response.json();
-
-
-    if (data.error) {
-      throw new Error(data.error.message);
+      return {
+        spend: "",
+        impressions: "",
+        clicks: "",
+        matchedCampaigns: 0,
+        matchedCampaignNames: [],
+        success: false,
+        error:
+          "No Meta match terms configured"
+      };
     }
+
+
+    const campaigns =
+      await getCampaignInsights(
+        adAccountId,
+        accessToken,
+        date
+      );
 
 
     let spend = 0;
     let impressions = 0;
     let clicks = 0;
 
+    const matchedCampaignNames =
+      [];
 
-    if (
-      data.data &&
-      data.data.length > 0
-    ) {
 
-      const stats = data.data[0];
+    for (const campaign of campaigns) {
 
-      spend = Number(stats.spend || 0);
-      impressions = Number(stats.impressions || 0);
-      clicks = Number(stats.clicks || 0);
+      if (
+        !campaignMatches(
+          campaign.campaign_name,
+          matchTerms
+        )
+      ) {
+        continue;
+      }
 
+
+      spend +=
+        Number(
+          campaign.spend || 0
+        );
+
+      impressions +=
+        Number(
+          campaign.impressions || 0
+        );
+
+      clicks +=
+        Number(
+          campaign.clicks || 0
+        );
+
+
+      matchedCampaignNames.push(
+        campaign.campaign_name || ""
+      );
     }
 
 
     return {
+      spend:
+        Number(
+          spend.toFixed(2)
+        ),
 
-      spend,
       impressions,
+
       clicks,
+
+      matchedCampaigns:
+        matchedCampaignNames.length,
+
+      matchedCampaignNames,
 
       success: true,
       error: ""
-
     };
 
 
   } catch(error) {
 
     return {
-
       spend: 0,
       impressions: 0,
       clicks: 0,
-
+      matchedCampaigns: 0,
+      matchedCampaignNames: [],
       success: false,
-      error: error.message
-
+      error:
+        error.message
     };
-
   }
-
 }
