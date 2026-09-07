@@ -262,6 +262,16 @@ for (const date of dates) {
       );
     }
 
+    console.log(
+      "Meta Matched Campaigns:",
+      meta.matchedCampaigns
+    );
+    
+    console.log(
+      "Meta Campaign Names:",
+      meta.matchedCampaignNames
+    );
+
 
     if (
       google.error &&
