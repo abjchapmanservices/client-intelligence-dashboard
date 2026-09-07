@@ -100,23 +100,50 @@ for (const date of dates) {
     // META
     // ============================
 
-    let meta = {
-      spend: "",
-      impressions: "",
-      clicks: "",
-      success: false,
-      error: ""
-    };
-    
-    
-    if (client.metaAdId) {
-    
-      meta =
-        await getMeta(
-          client,
-          process.env.META_ACCESS_TOKEN,
-          date
-        );
+    const meta =
+      await getMeta(
+        client,
+        process.env.META_ACCESS_TOKEN,
+        date
+      );
+
+
+    console.log(
+      "Meta Spend:",
+      meta.spend
+    );
+
+    console.log(
+      "Meta Impressions:",
+      meta.impressions
+    );
+
+    console.log(
+      "Meta Clicks:",
+      meta.clicks
+    );
+
+    console.log(
+      "Meta Matched Campaigns:",
+      meta.matchedCampaigns
+    );
+
+    console.log(
+      "Meta Campaign Names:",
+      meta.matchedCampaignNames
+    );
+
+    console.log(
+      "Meta Success:",
+      meta.success
+    );
+
+    if (meta.error) {
+
+      console.log(
+        "Meta Error:",
+        meta.error
+      );
     }
 
 
@@ -143,6 +170,39 @@ for (const date of dates) {
     }
 
 
+    console.log(
+      "Google Spend:",
+      google.spend
+    );
+
+    console.log(
+      "Google Impressions:",
+      google.impressions
+    );
+
+    console.log(
+      "Google Clicks:",
+      google.clicks
+    );
+
+    console.log(
+      "Google Success:",
+      google.success
+    );
+
+
+    if (
+      google.error &&
+      client.googleAdsId
+    ) {
+
+      console.log(
+        "Google Error:",
+        google.error
+      );
+    }
+
+
     // ============================
     // TEAMWORK
     // ============================
@@ -165,6 +225,49 @@ for (const date of dates) {
           client.teamworkProjectId,
           date
         );
+    }
+
+
+    console.log(
+      "Teamwork Hours:",
+      teamwork.hours
+    );
+
+    console.log(
+      "Teamwork Billable:",
+      teamwork.billable
+    );
+
+    console.log(
+      "Teamwork Cost:",
+      teamwork.cost
+    );
+
+    console.log(
+      "Teamwork Expenses:",
+      teamwork.expenses
+    );
+
+    console.log(
+      "Teamwork Last Invoice:",
+      teamwork.lastInvoice
+    );
+
+    console.log(
+      "Teamwork Success:",
+      teamwork.success
+    );
+
+
+    if (
+      teamwork.error &&
+      client.teamworkProjectId
+    ) {
+
+      console.log(
+        "Teamwork Error:",
+        teamwork.error
+      );
     }
 
 
@@ -248,57 +351,21 @@ for (const date of dates) {
         "Sheets Error:",
         sheetResult.error
       );
-    }
 
-
-    if (
-      meta.error &&
-      client.metaAdId
-    ) {
+    } else {
 
       console.log(
-        "Meta Error:",
-        meta.error
+        "Sheets Success: true"
       );
     }
 
+
     console.log(
-      "Meta Matched Campaigns:",
-      meta.matchedCampaigns
-    );
-    
-    console.log(
-      "Meta Campaign Names:",
-      meta.matchedCampaignNames
+      "--------------------------------"
     );
 
 
-    if (
-      google.error &&
-      client.googleAdsId
-    ) {
-
-      console.log(
-        "Google Error:",
-        google.error
-      );
-    }
-
-
-    if (
-      teamwork.error &&
-      client.teamworkProjectId
-    ) {
-
-      console.log(
-        "Teamwork Error:",
-        teamwork.error
-      );
-    }
-
-
-    // Small delay to reduce
-    // API rate-limit pressure
+    // Reduce API pressure between clients
 
     await wait(1000);
 
