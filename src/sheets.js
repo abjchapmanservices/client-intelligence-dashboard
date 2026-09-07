@@ -44,6 +44,28 @@ function getSheetsClient() {
 }
 
 
+function getSpreadsheetId() {
+
+  const spreadsheetId =
+    process.env
+      .GOOGLE_SHEETS_SPREADSHEET_ID;
+
+
+  if (!spreadsheetId) {
+
+    throw new Error(
+      "Missing GOOGLE_SHEETS_SPREADSHEET_ID"
+    );
+  }
+
+
+  return spreadsheetId;
+}
+
+
+// ============================================
+// DAILY DATA
+// ============================================
 
 export async function appendClientData(
   data
@@ -52,17 +74,7 @@ export async function appendClientData(
   try {
 
     const spreadsheetId =
-      process.env
-        .GOOGLE_SHEETS_SPREADSHEET_ID;
-
-
-    if (!spreadsheetId) {
-
-      throw new Error(
-        "Missing GOOGLE_SHEETS_SPREADSHEET_ID"
-      );
-    }
-
+      getSpreadsheetId();
 
     const sheets =
       getSheetsClient();
@@ -131,5 +143,134 @@ export async function appendClientData(
         error.message
     };
 
+  }
+}
+
+
+// ============================================
+// CAMPAIGN MATCHING
+// READ CURRENT MATCHES
+// ============================================
+
+export async function getCampaignMappings() {
+
+  const spreadsheetId =
+    getSpreadsheetId();
+
+  const sheets =
+    getSheetsClient();
+
+
+  const response =
+    await sheets.spreadsheets.values.get({
+
+      spreadsheetId,
+
+      range:
+        "Campaign Matching!A2:C"
+
+    });
+
+
+  const rows =
+    response.data.values || [];
+
+
+  return rows.map(
+    row => ({
+      campaignName:
+        String(row[0] || "").trim(),
+
+      client:
+        String(row[1] || "").trim(),
+
+      adAccountId:
+        String(row[2] || "").trim()
+    })
+  );
+}
+
+
+// ============================================
+// CAMPAIGN MATCHING
+// ADD NEW CAMPAIGNS
+// ============================================
+
+export async function appendCampaignMappings(
+  mappings
+) {
+
+  if (
+    !Array.isArray(mappings) ||
+    mappings.length === 0
+  ) {
+
+    return {
+      success: true,
+      added: 0,
+      error: ""
+    };
+  }
+
+
+  try {
+
+    const spreadsheetId =
+      getSpreadsheetId();
+
+    const sheets =
+      getSheetsClient();
+
+
+    const values =
+      mappings.map(
+        mapping => [
+
+          mapping.campaignName || "",
+
+          mapping.client || "",
+
+          mapping.adAccountId || ""
+
+        ]
+      );
+
+
+    await sheets.spreadsheets.values.append({
+
+      spreadsheetId,
+
+      range:
+        "Campaign Matching!A:C",
+
+      valueInputOption:
+        "USER_ENTERED",
+
+      insertDataOption:
+        "INSERT_ROWS",
+
+      requestBody: {
+        values
+      }
+
+    });
+
+
+    return {
+      success: true,
+      added:
+        mappings.length,
+      error: ""
+    };
+
+
+  } catch(error) {
+
+    return {
+      success: false,
+      added: 0,
+      error:
+        error.message
+    };
   }
 }
