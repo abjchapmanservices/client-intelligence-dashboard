@@ -150,6 +150,72 @@ console.log(
   quickbooks.error
 );
 
+const sheetResult =
+  await appendClientData({
+
+    date,
+
+    client:
+      client.name,
+
+    metaSpend:
+      meta.spend,
+
+    metaImpressions:
+      meta.impressions,
+
+    metaClicks:
+      meta.clicks,
+
+    googleSpend:
+      google.spend,
+
+    googleImpressions:
+      google.impressions,
+
+    googleClicks:
+      google.clicks,
+
+    teamworkHours:
+      teamwork.hours,
+
+    teamworkBillable:
+      teamwork.billable,
+
+    teamworkCost:
+      teamwork.cost || 0,
+
+    teamworkExpenses:
+      teamwork.expenses,
+
+    lastInvoice:
+      teamwork.lastInvoice,
+
+    quickbooksBalance:
+      quickbooks.balance,
+
+    quickbooksOverdue:
+      quickbooks.overdueBalance,
+
+    quickbooksStatus:
+      quickbooks.status,
+
+    quickbooksOpenInvoices:
+      quickbooks.openInvoices
+
+  });
+
+
+console.log(
+  "Sheets Success:",
+  sheetResult.success
+);
+
+console.log(
+  "Sheets Error:",
+  sheetResult.error
+);
+
 
 // CLOSE CLIENT LOOP
 }
