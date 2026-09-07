@@ -11,7 +11,14 @@ import { getMeta } from "./meta.js";
 
 console.log("Client Intelligence Dashboard Started");
 
-const date = "2026-08-20";
+const date =
+  new Date()
+    .toLocaleDateString(
+      "en-CA",
+      {
+        timeZone: "America/Chicago"
+      }
+    );
 
 
 const activeClients = clients.filter(
