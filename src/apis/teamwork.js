@@ -2,6 +2,64 @@ const siteName = "mentmarketingcreativeservices";
 
 const apiKey = process.env.TEAMWORK_API_KEY;
 
+let invoiceCachePromise = null;
+
+
+function wait(ms) {
+  return new Promise(
+    resolve => setTimeout(resolve, ms)
+  );
+}
+
+
+async function teamworkFetch(
+  url,
+  options = {},
+  attempt = 1
+) {
+
+  const response =
+    await teamworkFetch(url, options);
+
+
+  if (
+    response.status === 429 &&
+    attempt <= 5
+  ) {
+
+    const retryAfter =
+      Number(
+        response.headers.get(
+          "retry-after"
+        )
+      );
+
+
+    const delay =
+      retryAfter
+        ? retryAfter * 1000
+        : attempt * 3000;
+
+
+    console.log(
+      `Teamwork rate limited. Waiting ${delay / 1000}s...`
+    );
+
+
+    await wait(delay);
+
+
+    return teamworkFetch(
+      url,
+      options,
+      attempt + 1
+    );
+  }
+
+
+  return response;
+}
+
 const authHeader =
   "Basic " +
   Buffer.from(`${apiKey}:X`).toString("base64");
@@ -65,7 +123,7 @@ export async function getTeamworkData(
 
 
     const timeResponse =
-      await fetch(
+      await teamworkFetch(
         timeUrl,
         {
           headers: {
@@ -119,7 +177,7 @@ export async function getTeamworkData(
 
 
     const expenseResponse =
-      await fetch(
+      await teamworkFetch(
         expenseUrl,
         {
           headers: {
@@ -551,8 +609,18 @@ export async function getTeamworkData(
 // =========================================================
 // GET ALL INVOICES WITH PAGINATION
 // =========================================================
-
 async function getInvoices() {
+
+  if (!invoiceCachePromise) {
+
+    invoiceCachePromise =
+      fetchAllInvoices();
+  }
+
+
+  return invoiceCachePromise;
+}
+async function fetchAllInvoices() {
 
   let allInvoices = [];
 
@@ -568,7 +636,7 @@ async function getInvoices() {
 
 
     const response =
-      await fetch(
+      await teamworkFetch(
         url,
         {
           headers: {
@@ -647,7 +715,7 @@ async function getInvoiceDetails(
 
 
   const response =
-    await fetch(
+    await teamworkFetch(
       url,
       {
         headers: {
