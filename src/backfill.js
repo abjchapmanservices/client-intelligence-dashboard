@@ -107,10 +107,10 @@ for (const date of dates) {
       success: false,
       error: ""
     };
-
-
+    
+    
     if (client.metaAdId) {
-
+    
       meta =
         await getMeta(
           client,
