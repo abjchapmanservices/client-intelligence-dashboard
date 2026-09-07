@@ -1,4 +1,32 @@
-import { GoogleAdsApi } from "google-ads-api";
+async function getAccessToken() {
+  const body = new URLSearchParams({
+    grant_type: "refresh_token",
+    client_id: process.env.GOOGLE_ADS_CLIENT_ID,
+    client_secret: process.env.GOOGLE_ADS_CLIENT_SECRET,
+    refresh_token: process.env.GOOGLE_ADS_REFRESH_TOKEN
+  });
+
+  const response = await fetch(
+    "https://oauth2.googleapis.com/token",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      body
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      `OAuth failed: ${JSON.stringify(data)}`
+    );
+  }
+
+  return data.access_token;
+}
 
 
 export async function getGoogleAds(
@@ -19,79 +47,119 @@ export async function getGoogleAds(
     }
 
 
-    const client = new GoogleAdsApi({
-
-      client_id:
-        process.env.GOOGLE_ADS_CLIENT_ID,
-
-      client_secret:
-        process.env.GOOGLE_ADS_CLIENT_SECRET,
-
-      developer_token:
-        process.env.GOOGLE_ADS_DEVELOPER_TOKEN
-
-    });
+    const cleanCustomerId =
+      String(customerId).replace(/\D/g, "");
 
 
-    const customer =
-      client.Customer({
-
-        customer_id: customerId,
-
-        refresh_token:
-          process.env.GOOGLE_ADS_REFRESH_TOKEN
-
-      });
+    const accessToken =
+      await getAccessToken();
 
 
     const query = `
-
       SELECT
-
+        campaign.name,
         metrics.cost_micros,
         metrics.impressions,
         metrics.clicks
-
-      FROM customer
-
+      FROM campaign
       WHERE segments.date = '${date}'
-
     `;
 
 
-    const rows =
-      await customer.query(query);
+    const headers = {
+      "Authorization":
+        `Bearer ${accessToken}`,
+
+      "developer-token":
+        process.env.GOOGLE_ADS_DEVELOPER_TOKEN,
+
+      "Content-Type":
+        "application/json"
+    };
 
 
-    let spend = 0;
+    if (
+      process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID
+    ) {
+
+      headers["login-customer-id"] =
+        String(
+          process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID
+        ).replace(/\D/g, "");
+    }
+
+
+    const response =
+      await fetch(
+        `https://googleads.googleapis.com/v25/customers/${cleanCustomerId}/googleAds:searchStream`,
+        {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            query
+          })
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        JSON.stringify(data)
+      );
+    }
+
+
+    let spendMicros = 0;
     let impressions = 0;
     let clicks = 0;
 
 
-    if (rows.length > 0) {
+    for (const batch of data || []) {
 
-      const metrics = rows[0].metrics;
+      for (
+        const result of
+        batch.results || []
+      ) {
 
-
-      spend =
-        Number(metrics.cost_micros || 0)
-        / 1000000;
-
-
-      impressions =
-        Number(metrics.impressions || 0);
+        const metrics =
+          result.metrics || {};
 
 
-      clicks =
-        Number(metrics.clicks || 0);
+        spendMicros +=
+          Number(
+            metrics.costMicros || 0
+          );
 
+
+        impressions +=
+          Number(
+            metrics.impressions || 0
+          );
+
+
+        clicks +=
+          Number(
+            metrics.clicks || 0
+          );
+
+      }
     }
 
 
     return {
 
       spend:
-        Number(spend.toFixed(2)),
+        Number(
+          (
+            spendMicros /
+            1000000
+          ).toFixed(2)
+        ),
 
       impressions,
 
@@ -106,7 +174,6 @@ export async function getGoogleAds(
 
   } catch(error) {
 
-
     return {
 
       spend: 0,
@@ -117,7 +184,8 @@ export async function getGoogleAds(
 
       success: false,
 
-      error: error.message
+      error:
+        error.message
 
     };
 
