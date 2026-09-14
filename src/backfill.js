@@ -11,8 +11,8 @@ console.log(
 );
 
 
-const START_DATE = "2026-09-01";
-const END_DATE = "2026-09-07";
+const START_DATE = "2026-09-08";
+const END_DATE = "2026-09-13";
 
 
 function getDates(start, end) {
