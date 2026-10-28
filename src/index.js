@@ -1,4 +1,4 @@
-import clients from "../data/clients.json" with { type: "json" };
+import { getClients } from "./clients.js";
 import { getGoogleAds } from "./googleAds.js";
 import { getTeamworkData } from "./apis/teamwork.js";
 import { getQuickBooksData } from "./quickbooks.js";
@@ -20,6 +20,8 @@ const date =
       }
     );
 
+
+const clients = await getClients();
 
 const activeClients = clients.filter(
   client => client.active === true
