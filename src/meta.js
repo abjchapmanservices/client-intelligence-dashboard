@@ -407,7 +407,8 @@ async function prepareCampaignMappings(
     const suggestedClient =
       suggestClientForCampaign(
         campaignName,
-        adAccountId
+        adAccountId,
+        clients
       );
 
 
