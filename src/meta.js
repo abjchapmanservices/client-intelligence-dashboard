@@ -1,6 +1,4 @@
-import clients from "../data/clients.json" with {
-  type: "json"
-};
+import { getClients } from "./clients.js";
 
 import {
   getCampaignMappings,
@@ -113,7 +111,8 @@ async function getCampaignMappingMap() {
 
 function suggestClientForCampaign(
   campaignName,
-  adAccountId
+  adAccountId,
+  clients
 ) {
 
   const normalizedCampaign =
@@ -345,7 +344,8 @@ async function getCampaignInsights(
 async function prepareCampaignMappings(
   campaigns,
   adAccountId,
-  date
+  date,
+  clients
 ) {
 
   const preparationKey =
@@ -391,7 +391,8 @@ async function prepareCampaignMappings(
     const key =
       mappingKey(
         campaignName,
-        adAccountId
+        adAccountId,
+        clients
       );
 
 
@@ -527,10 +528,13 @@ export async function getMeta(
       );
 
 
+    const clients = await getClients();
+
     await prepareCampaignMappings(
       campaigns,
       adAccountId,
-      date
+      date,
+      clients
     );
 
 
