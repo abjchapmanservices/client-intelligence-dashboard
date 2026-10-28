@@ -1,4 +1,4 @@
-import clients from "../data/clients.json" with { type: "json" };
+import { getClients } from "./clients.js";
 
 import { getMeta } from "./meta.js";
 import { getGoogleAds } from "./googleAds.js";
@@ -52,6 +52,8 @@ function wait(ms) {
   );
 }
 
+
+const clients = await getClients();
 
 const dates =
   getDates(
