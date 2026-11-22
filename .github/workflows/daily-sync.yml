@@ -2,6 +2,11 @@
 name: Client Intelligence Test
 
 on:
+  # Runs daily at 4:00 AM Central Standard Time (10:00 UTC). Note: this
+  # becomes 5:00 AM CDT in daylight time unless the cron is changed to
+  # 09:00 UTC.
+  schedule:
+    - cron: '0 10 * * *'
   workflow_dispatch:
 
 jobs:
