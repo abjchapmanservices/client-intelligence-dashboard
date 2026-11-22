@@ -11,8 +11,20 @@ console.log(
 );
 
 
-const START_DATE = "2026-11-21";
-const END_DATE = "2026-11-21";
+// Daily sync: pull yesterday in America/Chicago.
+// Get today's date in America/Chicago, subtract one day, and format it as
+// YYYY-MM-DD. For example, a run on 2026-11-22 pulls 2026-11-21.
+function getYesterdayInChicago() {
+  const todayInChicago = new Date().toLocaleDateString("en-CA", {
+    timeZone: "America/Chicago",
+  });
+  const yesterday = new Date(`${todayInChicago}T12:00:00Z`);
+  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+  return yesterday.toISOString().slice(0, 10);
+}
+
+const START_DATE = getYesterdayInChicago();
+const END_DATE = START_DATE;
 
 
 function getDates(start, end) {
