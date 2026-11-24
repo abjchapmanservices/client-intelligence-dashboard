@@ -1,9 +1,11 @@
-import clients from "../data/clients.json" with {
-  type: "json"
-};
+// Client Source is now the source of truth for the client list
+// was data/clients.json.
+const clients = await getClientsFromSheet();
+
 
 import {
   getCampaignMappings,
+  getClientsFromSheet,
   appendCampaignMappings
 } from "./sheets.js";
 
