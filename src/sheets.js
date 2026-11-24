@@ -273,4 +273,75 @@ export async function appendCampaignMappings(
         error.message
     };
   }
+
+// ============================================
+// CLIENT SOURCE
+// READ THE CLIENT LIST
+// ============================================
+
+// Client Source is now the source of truth for the client list
+// (it replaces data/clients.json, which is kept in the repo for
+// reference only and is no longer read by the sync).
+// Reads the Client Source tab with the same authenticated Google
+// Sheets service account already used to write Daily Data
+// (GOOGLE_SHEETS_CLIENT_EMAIL / GOOGLE_SHEETS_PRIVATE_KEY /
+// GOOGLE_SHEETS_SPREADSHEET_ID). The sheet is not public, so this
+// must go through the Sheets API, not a public gviz URL.
+// Columns, in order: Client Name, Teamwork Project ID,
+// QuickBooks Customer ID, Meta Ad Account ID, Google Ads
+// Customer ID, Active. Blank IDs stay blank ("") so a missing
+// Meta, Google, Teamwork or QuickBooks ID behaves exactly as it
+// did from clients.json. Client Source has no metaMatch column,
+// so metaMatch is always [].
+
+export async function getClientsFromSheet() {
+
+  const spreadsheetId =
+    getSpreadsheetId();
+
+  const sheets =
+    getSheetsClient();
+
+  const response =
+    await sheets.spreadsheets.values.get({
+
+      spreadsheetId,
+
+      range:
+        "Client Source!A2:F"
+
+    });
+
+
+  const rows =
+    response.data.values || [];
+
+
+  return rows
+    .map(
+      row => ({
+        name:
+          String(row[0] || "").trim(),
+
+        teamworkProjectId:
+          String(row[1] || "").trim(),
+
+        quickbooksCustomerId:
+          String(row[2] || "").trim(),
+
+        metaAdAccountId:
+          String(row[3] || "").trim(),
+
+        metaMatch: [],
+
+        googleAdsId:
+          String(row[4] || "").trim(),
+
+        active:
+          String(row[5] || "").trim().toLowerCase() === "yes"
+      })
+    )
+    .filter(
+      client => client.name
+    );
 }
