@@ -1,9 +1,9 @@
-import clients from "../data/clients.json" with { type: "json" };
 import { getGoogleAds } from "./googleAds.js";
 import { getTeamworkData } from "./apis/teamwork.js";
 import { getQuickBooksData } from "./quickbooks.js";
 import {
-  appendClientData
+  appendClientData,
+  getClientsFromSheet
 } from "./sheets.js";
 
 import { getMeta } from "./meta.js";
@@ -21,6 +21,9 @@ const date =
     );
 
 
+// Client Source is now the source of truth for the client list
+// was data/clients.json.
+const clients = await getClientsFromSheet();
 const activeClients = clients.filter(
   client => client.active === true
 );
