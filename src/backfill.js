@@ -1,9 +1,8 @@
-import clients from "../data/clients.json" with { type: "json" };
 
 import { getMeta } from "./meta.js";
 import { getGoogleAds } from "./googleAds.js";
 import { getTeamworkData } from "./apis/teamwork.js";
-import { appendClientData } from "./sheets.js";
+import { appendClientData, getClientsFromSheet } from "./sheets.js";
 
 
 console.log(
@@ -72,9 +71,16 @@ const dates =
   );
 
 
+// Client Source is now the source of truth for the client list
+// was data/clients.json. This file is the scheduled daily sync,
+// so it filters to Active clients only, as src/index.js does:
+// every client in data/clients.json was active, so this preserves
+// the previous behaviour of the sync.
+const clients = await getClientsFromSheet();
+const activeClients = clients.filter(client => client.active === true);
 console.log(
   "Clients:",
-  clients.length
+  activeClients.length
 );
 
 console.log(
@@ -84,7 +90,7 @@ console.log(
 
 console.log(
   "Expected rows:",
-  clients.length *
+  activeClients.length *
   dates.length
 );
 
@@ -101,7 +107,7 @@ for (const date of dates) {
   );
 
 
-  for (const client of clients) {
+  for (const client of activeClients) {
 
     console.log(
       `${date} | ${client.name}`
